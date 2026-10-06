@@ -4,7 +4,7 @@ import { Quack } from '@/modules/quack/domain/quack';
 import { QuackRepository } from '@/modules/quack/repositories/quack.repository';
 import { Identity } from '@/shared/auth/domain/identity';
 import { mock } from 'jest-mock-extended';
-import { QuacksService } from './quacks.service';
+import { QuacksService, toSearchTerms } from './quacks.service';
 
 const aQuack = (overrides: Partial<Quack> = {}): Quack => ({
   id: 'q1',
@@ -25,7 +25,16 @@ describe('QuacksService', () => {
     const service = new QuacksService(repository);
 
     await expect(service.getQuacks()).resolves.toEqual(quacks);
-    expect(repository.getQuacks).toHaveBeenCalledTimes(1);
+    expect(repository.getQuacks).toHaveBeenCalledWith([]);
+  });
+
+  it('passes the search to the repository as words', async () => {
+    const repository = mock<QuackRepository>();
+    repository.getQuacks.mockResolvedValue([]);
+
+    await new QuacksService(repository).getQuacks('marek pond');
+
+    expect(repository.getQuacks).toHaveBeenCalledWith(['marek', 'pond']);
   });
 
   it('creates a quack owned by the signed-in user', async () => {
@@ -44,5 +53,20 @@ describe('QuacksService', () => {
       text: 'hello',
       userId: 'u1',
     });
+  });
+});
+
+describe('toSearchTerms', () => {
+  it.each([
+    [undefined, []],
+    ['', []],
+    ['   ', []],
+    ['  pond  ', ['pond']],
+    ['marek   pond', ['marek', 'pond']],
+    ['@marek', ['marek']],
+    ['@ pond', ['pond']],
+    ['50%_off', ['50%_off']],
+  ])('%p -> %p', (search, terms) => {
+    expect(toSearchTerms(search)).toEqual(terms);
   });
 });

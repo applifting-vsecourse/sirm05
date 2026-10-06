@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -21,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateQuackDto } from './dto/create-quack.dto';
 import { QuackResponseDto } from './dto/quack.response.dto';
+import { SearchQuacksDto } from './dto/search-quacks.dto';
 
 @ApiTags('quacks')
 @Controller('quacks')
@@ -37,11 +39,12 @@ export class QuacksController {
   constructor(private readonly quacksService: QuacksService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all quacks' })
+  @ApiOperation({ summary: 'List quacks, optionally filtered by a search' })
   @ApiResponse({ status: 200, type: [QuackResponseDto] })
+  @ApiResponse({ status: 400, description: 'Search longer than 100 chars' })
   @ApiResponse({ status: 401, description: 'Not signed in' })
-  async list(): Promise<QuackResponseDto[]> {
-    const quacks = await this.quacksService.getQuacks();
+  async list(@Query() query: SearchQuacksDto): Promise<QuackResponseDto[]> {
+    const quacks = await this.quacksService.getQuacks(query.q);
     return quacks.map(QuackResponseDto.fromDomain);
   }
 

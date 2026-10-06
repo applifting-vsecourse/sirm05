@@ -3,12 +3,19 @@ import { QuackRepository } from '@/modules/quack/repositories/quack.repository';
 import { Identity } from '@/shared/auth/domain/identity';
 import { Injectable } from '@nestjs/common';
 
+// Splits a search into words; a leading "@" is ignored so "@marek" = "marek".
+export const toSearchTerms = (search = ''): string[] =>
+  search
+    .split(/\s+/)
+    .map((word) => word.replace(/^@+/, ''))
+    .filter(Boolean);
+
 @Injectable()
 export class QuacksService {
   constructor(private readonly quackRepository: QuackRepository) {}
 
-  async getQuacks(): Promise<Quack[]> {
-    return this.quackRepository.getQuacks();
+  async getQuacks(search?: string): Promise<Quack[]> {
+    return this.quackRepository.getQuacks(toSearchTerms(search));
   }
 
   async createQuack(
