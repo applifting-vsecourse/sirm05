@@ -31,3 +31,11 @@ The CLI puts `shadow-xs`/`shadow-sm` on inputs, textareas and cards. [`DESIGN.md
 Assume the dev servers are up. If something is listening on the app's ports, that is this application: use it. Don't start a second instance, don't restart it, don't run `pnpm dev`.
 
 Don't reach for the browser to check your own work. Tests and type-checks are the evidence; open the running app when asked to, not on your own initiative.
+
+### Prisma `contains` does not escape LIKE wildcards
+
+`contains`/`startsWith`/`endsWith` go to Postgres `LIKE`/`ILIKE` as-is, so a user typing `%` or `_` matches everything. Escape user input first: `term.replace(/[\\%_]/g, '\\$&')` (see `QuackRepository.getQuacks`).
+
+### `pnpm check-all` on Windows
+
+The frontend `lint:check`, `format:check` and the vite-plugin-checker `lintCommand` quote globs with single quotes, which `cmd` passes through literally ("No files matching the pattern"). With `core.autocrlf=true`, Prettier also flags every file for CRLF. On Windows, run the steps directly: `npx eslint "./src/**/*.{ts,tsx,js,cjs,mjs}"`, `npx prettier --check --end-of-line auto "<glob>"`. CI (Linux) is unaffected.

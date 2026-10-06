@@ -40,4 +40,21 @@ describe("QuackList", () => {
     await userEvent.click(screen.getByRole("button", { name: /reload/i }))
     expect(onReload).toHaveBeenCalledOnce()
   })
+
+  it("tells the user nothing matches and lets them clear the search", async () => {
+    const onClearSearch = vi.fn()
+    render(
+      <QuackList
+        quacks={[]}
+        search="pond"
+        onClearSearch={onClearSearch}
+      />,
+    )
+
+    expect(screen.getByText(/No quacks match .pond../)).toBeInTheDocument()
+    expect(screen.queryByText(/no quacks yet/i)).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("button", { name: /clear search/i }))
+    expect(onClearSearch).toHaveBeenCalledOnce()
+  })
 })

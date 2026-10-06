@@ -31,8 +31,23 @@ const mapPrismaQuackToDomain = (
 export class QuackRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getQuacks(): Promise<Quack[]> {
+  // Every term must appear (case-insensitive) in the text, author name or username.
+  async getQuacks(terms: string[] = []): Promise<Quack[]> {
     const quacks = await this.prisma.quack.findMany({
+      where: {
+        AND: terms.map((term) => {
+          // Prisma passes `contains` to ILIKE unescaped, so % and _ would act as wildcards.
+          const escaped = term.replace(/[\\%_]/g, '\\$&');
+          const contains = { contains: escaped, mode: 'insensitive' } as const;
+          return {
+            OR: [
+              { text: contains },
+              { user: { name: contains } },
+              { user: { username: contains } },
+            ],
+          };
+        }),
+      },
       include: { user: true },
       orderBy: { createdAt: 'desc' },
     });
