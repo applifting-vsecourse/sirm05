@@ -57,3 +57,9 @@ Don't reach for the browser to check your own work. Tests and type-checks are th
 ### `pnpm check-all` on Windows
 
 The frontend `lint:check`, `format:check` and the vite-plugin-checker `lintCommand` quote globs with single quotes, which `cmd` passes through literally ("No files matching the pattern"). With `core.autocrlf=true`, Prettier also flags every file for CRLF. On Windows, run the steps directly: `npx eslint "./src/**/*.{ts,tsx,js,cjs,mjs}"`, `npx prettier --check --end-of-line auto "<glob>"`. CI (Linux) is unaffected.
+
+The same `lintCommand` makes `vite build` exit 2 on Windows. To check the build itself, build from a temporary copy of `vite.config.ts` with the `checker(...)` plugin removed (`vite build -c <copy>`), then delete the copy.
+
+### Optimistic mutations on one entity need a `scope`
+
+Two quick clicks on the same thing (a poll vote) fire two requests that can reach the server in either order: the UI shows the last click, the database keeps whichever landed last. Give the mutation `scope: { id: <entity> }` — `onMutate` still runs instantly, but requests run one after another. See `useVote`.
