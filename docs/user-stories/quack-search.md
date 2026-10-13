@@ -1,5 +1,8 @@
 # User story: find a quack by a word or its author
 
+**Status:** Done
+**PR:** [#2](https://github.com/applifting-vsecourse/sirm05/pull/2)
+
 **As a** signed-in user
 **I want to** type a word or an author's name and see only the quacks that match
 **So that** I can find a post I saw earlier without scrolling through the whole feed.

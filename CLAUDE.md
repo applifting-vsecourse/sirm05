@@ -7,7 +7,7 @@ Full-stack teaching template: pnpm monorepo with two apps.
 
 The worked example is the quack feed: `Quack` model → seed → repository → service → `GET`/`POST /api/quacks` (DTO-validated, author taken from the session) → zod schema → TanStack Query → list page + post form. Copy its pattern for new features.
 
-**Before writing or changing any UI, read [`DESIGN.md`](DESIGN.md).** It is a contract, not a suggestion — it exists to stop generated screens drifting into generic nested cards.
+**Before writing or changing any UI, read [`docs/DESIGN.md`](docs/DESIGN.md).** It is a contract, not a suggestion — it exists to stop generated screens drifting into generic nested cards.
 
 ## Commands
 
@@ -20,11 +20,29 @@ The worked example is the quack feed: `Quack` model → seed → repository → 
 
 Deliberately sparse — this file grows as the team learns what it expects from generated code. Add rules here when you find yourself repeating the same review feedback.
 
+### Development docs live in `docs/`
+
+Markdown about developing this app goes in [`docs/`](docs/) — start at [`docs/README.md`](docs/README.md). Process and Definition of Done: [`docs/workflow.md`](docs/workflow.md).
+
 ### UI controls come from the kit
 
 Need a control that isn't in `src/components/ui/`? Add it with `pnpm dlx shadcn@latest add <name>` — don't hand-roll one in a feature folder, even where a native input would do the job. One accessibility implementation to reason about beats a per-control judgement call.
 
-The CLI puts `shadow-xs`/`shadow-sm` on inputs, textareas and cards. [`DESIGN.md`](DESIGN.md) keeps shadows for things that genuinely float — dialogs, dropdowns, toasts. Strip them.
+The CLI puts `shadow-xs`/`shadow-sm` on inputs, textareas and cards. [`docs/DESIGN.md`](docs/DESIGN.md) keeps shadows for things that genuinely float — dialogs, dropdowns, toasts. Strip them.
+
+The CLI can also emit `import { cn } from "cn"` and add an npm package named `cn` to `package.json`. Wrong: the helper is `@/lib/utils`. Fix the import, `git checkout` `package.json` and `pnpm-lock.yaml` (a `pnpm remove` reshuffles the lockfile), then `pnpm install --frozen-lockfile`.
+
+### Code shared by two features goes to `lib/` or `components/`
+
+ESLint forbids one feature importing another. When two features need the same thing (e.g. moods: `src/lib/mood.ts` + `src/components/MoodPicker.tsx`), move it down a layer; let a route compose features when one needs another's data (`quacks.tsx` loads the profile to pass `defaultMood` to `QuackForm`).
+
+### Vitest hooks: use braces
+
+`beforeEach(() => mock.mockReset())` returns the mock, and Vitest runs a returned function as a cleanup hook, which calls your mock with no arguments. Write `beforeEach(() => { mock.mockReset() })`.
+
+### Schema change while the database is down
+
+Don't start Postgres to run `prisma migrate dev`. Write the migration offline: diff the committed schema against the new one with `prisma migrate diff --from-schema <old.prisma> --to-schema prisma/schema.prisma --script` into `prisma/migrations/<timestamp>_<name>/migration.sql`, then `prisma generate`. The next `pnpm dev` applies it.
 
 ### The app is already running
 
