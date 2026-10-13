@@ -10,6 +10,7 @@ import { quacksQueryOptions } from "@/features/quack/api/quacksQueryOptions"
 import { QuackForm } from "@/features/quack/components/QuackForm"
 import { QuackList } from "@/features/quack/components/QuackList"
 import { QuackSearch } from "@/features/quack/components/QuackSearch"
+import { usePollEvents } from "@/features/quack/hooks/usePollEvents"
 
 const quacksSearchParamsSchema = z.object({
   q: z.string().optional(),
@@ -27,6 +28,7 @@ function QuacksPage() {
   const navigate = Route.useNavigate()
   const quacksQuery = useQuery(quacksQueryOptions(q))
   const { data: profile } = useSuspenseQuery(profileQueryOptions())
+  usePollEvents()
 
   // Replace instead of push so typing doesn't add a history entry per pause.
   const setSearch = useCallback(
