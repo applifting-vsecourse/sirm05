@@ -86,7 +86,12 @@ export const seedDatabase = async (
 
   // Listed oldest first. The feed sorts newest first, so the last entry here is
   // the one at the top of the screen.
-  const exampleQuacks: { author: User; minutesAgo: number; text: string }[] = [
+  const exampleQuacks: {
+    author: User;
+    minutesAgo: number;
+    text: string;
+    pollOptions?: string[];
+  }[] = [
     {
       author: pondAdmin,
       minutesAgo: 2870,
@@ -148,6 +153,12 @@ The pond is not ready for this level of quality and, frankly, neither am I. 9/10
 Some of us would quite like to feel things.`,
     },
     {
+      author: breadCritic,
+      minutesAgo: 180,
+      text: `Lunch today?`,
+      pollOptions: ['Bread', 'More bread', 'Pondweed salad'],
+    },
+    {
       author: caffeinatedDuck,
       minutesAgo: 95,
       text: `me: throws one crumb into the pond
@@ -164,9 +175,10 @@ Please stop tagging me.`,
 
   const now = Date.now();
 
-  for (const { author, minutesAgo, text } of exampleQuacks) {
+  for (const { author, minutesAgo, text, pollOptions } of exampleQuacks) {
     await createQuack(prisma, {
       text,
+      pollOptions,
       userId: author.id,
       createdAt: new Date(now - minutesAgo * MINUTE_IN_MS),
     });
