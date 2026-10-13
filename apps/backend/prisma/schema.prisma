@@ -32,16 +32,48 @@ enum QuackMood {
 }
 
 model Quack {
-  id        String     @id @default(cuid())
-  text      String     @db.Text
-  mood      QuackMood?
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @default(now()) @updatedAt
+  id          String       @id @default(cuid())
+  text        String       @db.Text
+  mood        QuackMood?
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+  // A quack with options is a poll; its text is the question.
+  pollOptions PollOption[]
+  pollVotes   PollVote[]
 
   @@index([userId])
   @@map("quack")
+}
+
+model PollOption {
+  id       String     @id @default(cuid())
+  quack    Quack      @relation(fields: [quackId], references: [id], onDelete: Cascade)
+  quackId  String
+  text     String     @db.VarChar(50)
+  position Int
+  votes    PollVote[]
+
+  @@unique([quackId, position])
+  // Target of PollVote's composite foreign key: a vote's option must belong to its quack.
+  @@unique([id, quackId])
+  @@map("poll_option")
+}
+
+model PollVote {
+  quack     Quack      @relation(fields: [quackId], references: [id], onDelete: Cascade)
+  quackId   String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  option    PollOption @relation(fields: [optionId, quackId], references: [id, quackId], onDelete: Cascade)
+  optionId  String
+  updatedAt DateTime   @default(now()) @updatedAt
+
+  // One person, one vote per poll.
+  @@id([quackId, userId])
+  @@index([optionId])
+  @@map("poll_vote")
 }
 
 model Session {
@@ -93,17 +125,18 @@ model Verification {
 }
 
 model User {
-  id            String    @id
+  id            String     @id
   name          String
   email         String
   emailVerified Boolean
-  image         String?   @db.Text
+  image         String?    @db.Text
   createdAt     DateTime
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
   quacks        Quack[]
-  role          UserRole  @default(user)
+  pollVotes     PollVote[]
+  role          UserRole   @default(user)
 
   username        String?    @db.VarChar(50)
   displayUsername String?    @db.VarChar(50)
