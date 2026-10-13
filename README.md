@@ -93,4 +93,4 @@ apps/backend/   NestJS — src/modules (features), src/core, src/shared; prisma/
 apps/frontend/  React — src/routes (pages), src/features (feature folders), src/components (UI kit)
 ```
 
-Working conventions for AI-assisted development: [`CLAUDE.md`](CLAUDE.md). UI rules every screen must follow: [`DESIGN.md`](DESIGN.md).
+Working conventions for AI-assisted development: [`CLAUDE.md`](CLAUDE.md). UI rules every screen must follow: [`docs/DESIGN.md`](docs/DESIGN.md).
