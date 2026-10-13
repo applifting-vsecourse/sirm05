@@ -1,10 +1,11 @@
 import { useCallback } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 
 import { Seo } from "@/components/Seo"
 
+import { profileQueryOptions } from "@/features/profile/api/profileQueryOptions"
 import { quacksQueryOptions } from "@/features/quack/api/quacksQueryOptions"
 import { QuackForm } from "@/features/quack/components/QuackForm"
 import { QuackList } from "@/features/quack/components/QuackList"
@@ -15,14 +16,17 @@ const quacksSearchParamsSchema = z.object({
 })
 
 export const Route = createFileRoute("/_ProtectedPages/quacks")({
-  component: QuacksPage,
+  // The new-quack form starts on the default mood, so it must be known before render.
   validateSearch: quacksSearchParamsSchema,
+  component: QuacksPage,
+  loader: ({ context }) => context.queryClient.ensureQueryData(profileQueryOptions()),
 })
 
 function QuacksPage() {
   const { q } = Route.useSearch()
   const navigate = Route.useNavigate()
   const quacksQuery = useQuery(quacksQueryOptions(q))
+  const { data: profile } = useSuspenseQuery(profileQueryOptions())
 
   // Replace instead of push so typing doesn't add a history entry per pause.
   const setSearch = useCallback(
@@ -36,7 +40,10 @@ function QuacksPage() {
       <section className="mx-auto w-full max-w-2xl px-4 py-8">
         <h1 className="mb-4 text-2xl font-semibold tracking-tight">Quacks</h1>
 
-        <QuackForm className="mb-6" />
+        <QuackForm
+          defaultMood={profile.defaultMood}
+          className="mb-6"
+        />
 
         <QuackSearch
           className="mb-4"
