@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 
+import { MoodPicker } from "@/components/MoodPicker"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Textarea } from "@/components/ui/textarea"
+import { moodSchema, type Mood } from "@/lib/mood"
 import { cn } from "@/lib/utils"
 
 import { useAddQuack } from "@/features/quack/hooks/useAddQuack"
@@ -28,24 +30,29 @@ const schema = z.object({
     .trim()
     .min(1, "Write something first")
     .max(MAX_LENGTH, `Keep it under ${MAX_LENGTH} characters`),
+  mood: moodSchema.nullable(),
 })
 
 type FormValues = z.infer<typeof schema>
 
-type QuackFormProps = { className?: string }
+// The picker starts on, and returns to, the user's default mood from Settings.
+type QuackFormProps = { defaultMood?: Mood | null; className?: string }
 
-export function QuackForm({ className }: QuackFormProps) {
+export function QuackForm({ defaultMood = null, className }: QuackFormProps) {
   const addQuack = useAddQuack()
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { text: "" },
+    defaultValues: { text: "", mood: defaultMood },
   })
 
   const text = useWatch({ control: form.control, name: "text" })
   const length = text?.length ?? 0
 
   const handleSubmit = (values: FormValues) => {
-    addQuack.mutate({ text: values.text }, { onSuccess: () => form.reset() })
+    addQuack.mutate(
+      { text: values.text, mood: values.mood ?? undefined },
+      { onSuccess: () => form.reset() },
+    )
   }
 
   return (
@@ -76,6 +83,23 @@ export function QuackForm({ className }: QuackFormProps) {
                 />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="mood"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Mood</FormLabel>
+              <FormControl>
+                <MoodPicker
+                  isDisabled={addQuack.isPending}
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              </FormControl>
             </FormItem>
           )}
         />
