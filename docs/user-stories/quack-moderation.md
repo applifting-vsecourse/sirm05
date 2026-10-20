@@ -1,6 +1,6 @@
 # User story: a moderator can delete any quack
 
-**Status:** Ready
+**Status:** In progress
 **PR:** —
 
 **As a** moderator (a user with the `admin` role)
@@ -29,7 +29,7 @@ Someone has started posting inappropriate quacks and today only the author can d
 
 ## Implementation plan
 
-Branch `feature/quack-moderation`, stacked on `feature/quack-filter-delete`; the PR targets that branch until it merges, then rebase onto `main` (`git rebase --onto main feature/quack-filter-delete`) and retarget the PR to `main`.
+Branch `feature/quack-moderation` off `main`.
 
 **Backend** (`apps/backend/src/modules/quack`)
 

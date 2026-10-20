@@ -43,6 +43,20 @@ describe("QuackActions", () => {
     expect(mutate).not.toHaveBeenCalled()
   })
 
+  it("names the author when a moderator deletes someone else's quack", async () => {
+    render(
+      <QuackActions
+        quack={quack}
+        isMine={false}
+      />,
+    )
+    await openDialog()
+
+    expect(
+      screen.getByRole("alertdialog", { name: "Delete @CaffeinatedDuck's quack?" }),
+    ).toBeInTheDocument()
+  })
+
   it("deletes the quack on confirm and closes when the server agrees", async () => {
     mutate.mockImplementation((_id: string, options: { onSuccess: () => void }) => {
       options.onSuccess()

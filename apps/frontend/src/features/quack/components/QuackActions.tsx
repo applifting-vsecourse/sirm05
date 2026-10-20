@@ -23,8 +23,9 @@ import { useDeleteQuack } from "@/features/quack/hooks/useDeleteQuack"
 
 const PREVIEW_LENGTH = 80
 
-// The author's own actions on a quack: a menu with Delete, confirmed in a dialog.
-export function QuackActions({ quack }: { quack: Quack }) {
+// Actions on a quack: a menu with Delete, confirmed in a dialog. Moderators get it on
+// others' quacks too (isMine false), and the dialog then names the author.
+export function QuackActions({ quack, isMine = true }: { quack: Quack; isMine?: boolean }) {
   const [isConfirming, setIsConfirming] = useState(false)
   const deleteQuack = useDeleteQuack()
 
@@ -62,7 +63,9 @@ export function QuackActions({ quack }: { quack: Quack }) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this quack?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isMine ? "Delete this quack?" : `Delete @${quack.user.username}'s quack?`}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               &ldquo;{preview}&rdquo; will be gone for good, with its poll and votes.
             </AlertDialogDescription>

@@ -82,6 +82,18 @@ describe("QuackList", () => {
     expect(screen.getAllByRole("button", { name: "More actions" })).toHaveLength(1)
   })
 
+  it("offers actions on every quack to a moderator", () => {
+    render(
+      <QuackList
+        quacks={[quack(), quack({ id: "q2", userId: "u2" })]}
+        viewerId="u1"
+        canModerate
+      />,
+    )
+
+    expect(screen.getAllByRole("button", { name: "More actions" })).toHaveLength(2)
+  })
+
   it("on Mine with no quacks, says so and offers to write the first one", async () => {
     const onWriteFirst = vi.fn()
     render(

@@ -7,10 +7,11 @@ import { QuackPoll } from "@/features/quack/components/QuackPoll"
 import { UsersName } from "@/features/quack/components/UsersName"
 import { UsersUserName } from "@/features/quack/components/UsersUserName"
 
-// isMine: the viewer wrote it, so they get its actions (the API checks again).
-type QuackItemProps = { quack: Quack; isMine?: boolean }
+// isMine: the viewer wrote it; canModerate: the viewer is an admin. Either gets its
+// actions (the API checks again).
+type QuackItemProps = { quack: Quack; isMine?: boolean; canModerate?: boolean }
 
-export function QuackItem({ quack, isMine = false }: QuackItemProps) {
+export function QuackItem({ quack, isMine = false, canModerate = false }: QuackItemProps) {
   const { name, username } = quack.user
 
   const initials = name
@@ -41,7 +42,12 @@ export function QuackItem({ quack, isMine = false }: QuackItemProps) {
               </>
             ) : null}
           </div>
-          {isMine ? <QuackActions quack={quack} /> : null}
+          {isMine || canModerate ? (
+            <QuackActions
+              quack={quack}
+              isMine={isMine}
+            />
+          ) : null}
         </div>
         <p className="text-sm break-words whitespace-pre-line">{quack.text}</p>
         {quack.poll ? (

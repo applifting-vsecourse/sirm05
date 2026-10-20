@@ -15,6 +15,8 @@ type QuackListProps = {
   onClearSearch?: () => void
   // The signed-in user: their quacks get a Delete action.
   viewerId?: string
+  // An admin: every quack gets a Delete action.
+  canModerate?: boolean
   isMine?: boolean
   onWriteFirst?: () => void
 }
@@ -27,6 +29,7 @@ export function QuackList({
   search,
   onClearSearch,
   viewerId,
+  canModerate,
   isMine,
   onWriteFirst,
 }: QuackListProps) {
@@ -99,6 +102,7 @@ export function QuackList({
           key={quack.id}
           quack={quack}
           isMine={quack.userId === viewerId}
+          canModerate={canModerate}
         />
       ))}
     </div>
