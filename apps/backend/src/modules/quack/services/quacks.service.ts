@@ -42,11 +42,11 @@ export class QuacksService {
     );
   }
 
-  // Only the author may delete — checked here, so calling the API directly doesn't get around it.
+  // Only the author or a moderator (admin) may delete — checked here, so calling
+  // the API directly doesn't get around it.
   async deleteQuack(user: Identity, quackId: string): Promise<void> {
     const authorId = await this.quackRepository.getQuackAuthorId(quackId);
     if (!authorId) throw new NotFoundException('Quack not found');
-    // Moderators (admins) may delete anyone's quack.
     if (authorId !== user.id && user.role !== 'admin') {
       throw new ForbiddenException('You can only delete your own quacks');
     }

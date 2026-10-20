@@ -43,4 +43,10 @@ Branch `feature/quack-moderation` off `main`.
 5. `QuackActions`: when not `isMine`, title "Delete @{username}'s quack?"; everything else reused.
 6. Tests: `QuackList` shows the menu on others' quacks for a moderator and not for a regular user; `QuackActions` dialog title names the author when not mine.
 
+**E2E** ([ADR 0003](../decisions/0003-e2e-tests-with-playwright.md))
+
+7. Playwright in `apps/frontend/e2e/moderation.spec.ts`: CaffeinatedDuck posts; signed out → 401; DeepDuckThoughts sees no menu and the API returns 403; `admin@example.com` deletes it through the menu; it is gone for the author. Verify it fails when the service check is removed.
+
+**Review:** three accounts by hand (author, `deepduckthoughts`, `admin@example.com`), then `DELETE /api/quacks/:id` in Swagger as a regular user → 403.
+
 **Close out:** status → _Done_, PR link here, CLAUDE.md lesson if one comes up.
