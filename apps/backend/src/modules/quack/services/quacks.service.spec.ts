@@ -3,7 +3,11 @@
 import { Poll, PollCounts, Quack } from '@/modules/quack/domain/quack';
 import { QuackRepository } from '@/modules/quack/repositories/quack.repository';
 import { Identity } from '@/shared/auth/domain/identity';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { QuacksService, toSearchTerms } from './quacks.service';
 
@@ -39,7 +43,7 @@ describe('QuacksService', () => {
 
     await expect(service.getQuacks(user)).resolves.toEqual(quacks);
     // polls are read for the viewer, so "my vote" is theirs
-    expect(repository.getQuacks).toHaveBeenCalledWith('u1', []);
+    expect(repository.getQuacks).toHaveBeenCalledWith('u1', [], undefined);
   });
 
   it('passes the search to the repository as words', async () => {
@@ -48,7 +52,56 @@ describe('QuacksService', () => {
 
     await new QuacksService(repository).getQuacks(user, 'marek pond');
 
-    expect(repository.getQuacks).toHaveBeenCalledWith('u1', ['marek', 'pond']);
+    expect(repository.getQuacks).toHaveBeenCalledWith(
+      'u1',
+      ['marek', 'pond'],
+      undefined,
+    );
+  });
+
+  it('narrows to the signed-in user’s quacks when mine is set', async () => {
+    const repository = mock<QuackRepository>();
+    repository.getQuacks.mockResolvedValue([]);
+
+    await new QuacksService(repository).getQuacks(user, 'pond', true);
+
+    expect(repository.getQuacks).toHaveBeenCalledWith('u1', ['pond'], 'u1');
+  });
+
+  describe('deleting', () => {
+    const setup = (
+      authorId: string | null,
+    ): { repository: MockProxy<QuackRepository>; service: QuacksService } => {
+      const repository = mock<QuackRepository>();
+      repository.getQuackAuthorId.mockResolvedValue(authorId);
+      return { repository, service: new QuacksService(repository) };
+    };
+
+    it('deletes the signed-in user’s own quack', async () => {
+      const { repository, service } = setup('u1');
+
+      await service.deleteQuack(user, 'q1');
+
+      expect(repository.deleteQuack).toHaveBeenCalledWith('q1');
+    });
+
+    it('refuses to delete someone else’s quack', async () => {
+      const { repository, service } = setup('u2');
+
+      await expect(service.deleteQuack(user, 'q1')).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+      expect(repository.deleteQuack).not.toHaveBeenCalled();
+    });
+
+    it('treats a missing quack as not found', async () => {
+      const { repository, service } = setup(null);
+
+      await expect(service.deleteQuack(user, 'q1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(repository.deleteQuack).not.toHaveBeenCalled();
+    });
   });
 
   it('creates a quack owned by the signed-in user', async () => {
