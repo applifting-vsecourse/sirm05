@@ -13,6 +13,10 @@ type QuackListProps = {
   onReload?: () => void
   search?: string
   onClearSearch?: () => void
+  // The signed-in user: their quacks get a Delete action.
+  viewerId?: string
+  isMine?: boolean
+  onWriteFirst?: () => void
 }
 
 export function QuackList({
@@ -22,6 +26,9 @@ export function QuackList({
   onReload,
   search,
   onClearSearch,
+  viewerId,
+  isMine,
+  onWriteFirst,
 }: QuackListProps) {
   return (
     <div className="flex flex-col">
@@ -67,6 +74,19 @@ export function QuackList({
               </Button>
             ) : null}
           </div>
+        ) : isMine ? (
+          <div className="flex flex-col items-center gap-3 py-8 text-sm text-muted-foreground">
+            <p>You haven&apos;t posted any quacks yet.</p>
+            {onWriteFirst ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onWriteFirst}
+              >
+                Write your first quack
+              </Button>
+            ) : null}
+          </div>
         ) : (
           <p className="py-8 text-center text-sm text-muted-foreground">
             No quacks yet. Post the first one.
@@ -78,6 +98,7 @@ export function QuackList({
         <QuackItem
           key={quack.id}
           quack={quack}
+          isMine={quack.userId === viewerId}
         />
       ))}
     </div>

@@ -32,6 +32,8 @@ The CLI puts `shadow-xs`/`shadow-sm` on inputs, textareas and cards. [`docs/DESI
 
 The CLI can also emit `import { cn } from "cn"` and add an npm package named `cn` to `package.json`. Wrong: the helper is `@/lib/utils`. Fix the import, `git checkout` `package.json` and `pnpm-lock.yaml` (a `pnpm remove` reshuffles the lockfile), then `pnpm install --frozen-lockfile`.
 
+When a component depends on one that already exists (`alert-dialog` → `button`), the CLI asks whether to overwrite it, and a non-interactive shell aborts the whole `add` at that prompt. Add such components one at a time with `echo n | pnpm dlx shadcn@latest add <name>`.
+
 ### Code shared by two features goes to `lib/` or `components/`
 
 ESLint forbids one feature importing another. When two features need the same thing (e.g. moods: `src/lib/mood.ts` + `src/components/MoodPicker.tsx`), move it down a layer; let a route compose features when one needs another's data (`quacks.tsx` loads the profile to pass `defaultMood` to `QuackForm`).

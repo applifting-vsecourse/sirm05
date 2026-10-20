@@ -1,6 +1,6 @@
 # User story: delete my own quacks and see only mine
 
-**Status:** Ready
+**Status:** In progress
 **PR:** —
 
 **As an** author

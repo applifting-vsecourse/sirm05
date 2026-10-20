@@ -6,6 +6,10 @@ import { describe, expect, it, vi } from "vitest"
 import type { Quack } from "@/features/quack/api/quackSchemas"
 import { QuackList } from "@/features/quack/components/QuackList"
 
+vi.mock("@/features/quack/hooks/useDeleteQuack", () => ({
+  useDeleteQuack: () => ({ mutate: vi.fn(), isPending: false }),
+}))
+
 const quack = (overrides: Partial<Quack> = {}): Quack => ({
   id: "q1",
   text: "quack quack",
@@ -65,5 +69,45 @@ describe("QuackList", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /clear search/i }))
     expect(onClearSearch).toHaveBeenCalledOnce()
+  })
+
+  it("offers actions on my quacks only", () => {
+    render(
+      <QuackList
+        quacks={[quack(), quack({ id: "q2", userId: "u2" })]}
+        viewerId="u1"
+      />,
+    )
+
+    expect(screen.getAllByRole("button", { name: "More actions" })).toHaveLength(1)
+  })
+
+  it("on Mine with no quacks, says so and offers to write the first one", async () => {
+    const onWriteFirst = vi.fn()
+    render(
+      <QuackList
+        quacks={[]}
+        isMine
+        onWriteFirst={onWriteFirst}
+      />,
+    )
+
+    expect(screen.getByText("You haven't posted any quacks yet.")).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("button", { name: "Write your first quack" }))
+    expect(onWriteFirst).toHaveBeenCalledOnce()
+  })
+
+  it("on Mine with a search that matches nothing, shows the search state", () => {
+    render(
+      <QuackList
+        quacks={[]}
+        isMine
+        search="pond"
+      />,
+    )
+
+    expect(screen.getByText(/No quacks match .pond../)).toBeInTheDocument()
+    expect(screen.queryByText(/haven't posted/)).not.toBeInTheDocument()
   })
 })
