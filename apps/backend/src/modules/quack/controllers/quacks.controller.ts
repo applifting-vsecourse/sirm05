@@ -47,16 +47,39 @@ export class QuacksController {
   constructor(private readonly quacksService: QuacksService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List quacks, optionally filtered by a search' })
+  @ApiOperation({
+    summary: 'List quacks, optionally filtered by a search and to mine',
+  })
   @ApiResponse({ status: 200, type: [QuackResponseDto] })
-  @ApiResponse({ status: 400, description: 'Search longer than 100 chars' })
+  @ApiResponse({
+    status: 400,
+    description: 'Search longer than 100 chars or mine not true/false',
+  })
   @ApiResponse({ status: 401, description: 'Not signed in' })
   async list(
     @User() user: Identity,
     @Query() query: SearchQuacksDto,
   ): Promise<QuackResponseDto[]> {
-    const quacks = await this.quacksService.getQuacks(user, query.q);
+    const quacks = await this.quacksService.getQuacks(
+      user,
+      query.q,
+      query.mine,
+    );
     return quacks.map(QuackResponseDto.fromDomain);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete your own quack, with its poll' })
+  @ApiResponse({ status: 204, description: 'Deleted' })
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 403, description: "Someone else's quack" })
+  @ApiResponse({ status: 404, description: 'Quack not found' })
+  async delete(
+    @User() user: Identity,
+    @Param('id') quackId: string,
+  ): Promise<void> {
+    await this.quacksService.deleteQuack(user, quackId);
   }
 
   @Post()

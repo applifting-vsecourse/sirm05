@@ -8,6 +8,7 @@ import { QuackRepository } from '@/modules/quack/repositories/quack.repository';
 import { Identity } from '@/shared/auth/domain/identity';
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -29,8 +30,26 @@ export class QuacksService {
 
   constructor(private readonly quackRepository: QuackRepository) {}
 
-  async getQuacks(viewer: Identity, search?: string): Promise<Quack[]> {
-    return this.quackRepository.getQuacks(viewer.id, toSearchTerms(search));
+  async getQuacks(
+    viewer: Identity,
+    search?: string,
+    mine = false,
+  ): Promise<Quack[]> {
+    return this.quackRepository.getQuacks(
+      viewer.id,
+      toSearchTerms(search),
+      mine ? viewer.id : undefined,
+    );
+  }
+
+  // Only the author may delete — checked here, so calling the API directly doesn't get around it.
+  async deleteQuack(user: Identity, quackId: string): Promise<void> {
+    const authorId = await this.quackRepository.getQuackAuthorId(quackId);
+    if (!authorId) throw new NotFoundException('Quack not found');
+    if (authorId !== user.id) {
+      throw new ForbiddenException('You can only delete your own quacks');
+    }
+    await this.quackRepository.deleteQuack(quackId);
   }
 
   async createQuack(

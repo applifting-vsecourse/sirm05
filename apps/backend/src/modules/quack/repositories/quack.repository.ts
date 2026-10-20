@@ -66,9 +66,15 @@ export class QuackRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   // Every term must appear (case-insensitive) in the text, author name or username.
-  async getQuacks(viewerId: string, terms: string[] = []): Promise<Quack[]> {
+  // With authorId, only that user's quacks.
+  async getQuacks(
+    viewerId: string,
+    terms: string[] = [],
+    authorId?: string,
+  ): Promise<Quack[]> {
     const quacks = await this.prisma.quack.findMany({
       where: {
+        userId: authorId,
         AND: terms.map((term) => {
           // Prisma passes `contains` to ILIKE unescaped, so % and _ would act as wildcards.
           const escaped = term.replace(/[\\%_]/g, '\\$&');
@@ -109,6 +115,20 @@ export class QuackRepository {
       include: { user: true, ...pollInclude(createQuackData.userId) },
     });
     return mapPrismaQuackToDomain(quack);
+  }
+
+  // null when the quack doesn't exist.
+  async getQuackAuthorId(quackId: string): Promise<string | null> {
+    const quack = await this.prisma.quack.findUnique({
+      where: { id: quackId },
+      select: { userId: true },
+    });
+    return quack?.userId ?? null;
+  }
+
+  // Poll options and votes go with it (onDelete: Cascade).
+  async deleteQuack(quackId: string): Promise<void> {
+    await this.prisma.quack.deleteMany({ where: { id: quackId } });
   }
 
   // null when the quack doesn't exist or has no poll.
