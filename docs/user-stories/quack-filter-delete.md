@@ -22,7 +22,7 @@ Today a quack is forever and my posts are mixed into everyone else's. This is th
 
 ### Filter
 
-7. Above the feed there are two tabs: All and Mine. All is selected by default and shows the feed as today. Mine shows only my quacks, newest first.
+7. Above the feed there are two tabs: All and Mine. All is selected by default and shows the feed as today. Mine shows only my quacks, newest first. The server does the filtering (`GET /api/quacks?mine=true`), not the client, so it stays correct once the feed is paginated.
 8. The selected tab survives a page refresh and the back button, and can be shared as a link (`/quacks?mine=true`).
 9. The tab and the search combine: on Mine, a search finds only my quacks that match it.
    _Example:_ Mine + `pond` shows my quacks containing "pond", not other people's.
