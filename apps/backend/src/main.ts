@@ -46,8 +46,8 @@ async function main(): Promise<void> {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig, {
-    ignoreGlobalPrefix: true,}
-  );
+    ignoreGlobalPrefix: true,
+  });
   SwaggerModule.setup('api/docs', app, document);
 
   // Print debug information for development purposes
