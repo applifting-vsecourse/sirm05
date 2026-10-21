@@ -1,4 +1,6 @@
-import { type Browser, expect, type Page, test } from "@playwright/test"
+import { expect, test, type Browser, type Page } from "@playwright/test"
+
+import { signIn as signInPage } from "./signIn"
 
 const API = "http://localhost:4050/api"
 
@@ -7,14 +9,10 @@ const AUTHOR = { email: "caffeinatedduck@example.com", password: "password1" }
 const OTHER = { email: "deepduckthoughts@example.com", password: "password2" }
 const ADMIN = { email: "admin@example.com", password: "adminpassword" }
 
-// Each user in their own browser context, so their sessions don't mix.
+// Each user on their own page (its own browser context), so their sessions don't mix.
 const signIn = async (browser: Browser, user: { email: string; password: string }) => {
-  const page = await (await browser.newContext()).newPage()
-  await page.goto("/login")
-  await page.getByLabel("Email").fill(user.email)
-  await page.getByLabel("Password").fill(user.password)
-  await page.getByRole("button", { name: "Sign in" }).click()
-  await page.waitForURL("**/quacks")
+  const page = await browser.newPage()
+  await signInPage(page, user.email, user.password)
   return page
 }
 
