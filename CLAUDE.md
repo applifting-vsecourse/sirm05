@@ -14,6 +14,7 @@ The worked example is the quack feed: `Quack` model → seed → repository → 
 - `pnpm dev` — everything: env files, Postgres (Docker), migrate, seed, both dev servers
 - `pnpm check-all` — lint + type-check + tests + build (same as CI)
 - `pnpm backend test` / `pnpm frontend test:ci` — unit tests
+- `pnpm frontend test:e2e` — Playwright E2E against the running app (needs `pnpm dev`)
 - `pnpm backend prisma:migrations:run` — create/apply migrations after schema changes
 
 ## Conventions
@@ -61,6 +62,14 @@ Don't reach for the browser to check your own work. Tests and type-checks are th
 The frontend `lint:check`, `format:check` and the vite-plugin-checker `lintCommand` quote globs with single quotes, which `cmd` passes through literally ("No files matching the pattern"). With `core.autocrlf=true`, Prettier also flags every file for CRLF. On Windows, run the steps directly: `npx eslint "./src/**/*.{ts,tsx,js,cjs,mjs}"`, `npx prettier --check --end-of-line auto "<glob>"`. CI (Linux) is unaffected.
 
 The same `lintCommand` makes `vite build` exit 2 on Windows. To check the build itself, build from a temporary copy of `vite.config.ts` with the `checker(...)` plugin removed (`vite build -c <copy>`), then delete the copy.
+
+### Permissions: the server decides, the UI only hides
+
+A rule about one record ("the author or an admin") goes in the service, next to the lookup — not a route guard, which can't see the record. "Me" is the session's `Identity` (`id`, `role`), never a `userId` from the URL or body. The route turns the session into flags (`viewerId`, `canModerate`) for the feature; React only hides controls. Every rule gets a service test for the refused case, and an E2E test (`pnpm frontend test:e2e`) that calls the API as the refused user — it must fail when the check is removed. See `QuacksService.deleteQuack`.
+
+### `pnpm add` breaks the running frontend
+
+Installing a frontend package wipes `node_modules/.vite` under the running dev server: every page 504s with "Outdated Optimize Dep". Ask the user to restart the frontend dev server; don't do it yourself.
 
 ### Optimistic mutations on one entity need a `scope`
 

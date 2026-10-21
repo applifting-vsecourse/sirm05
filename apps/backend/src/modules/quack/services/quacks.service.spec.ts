@@ -94,6 +94,14 @@ describe('QuacksService', () => {
       expect(repository.deleteQuack).not.toHaveBeenCalled();
     });
 
+    it('lets an admin delete someone else’s quack', async () => {
+      const { repository, service } = setup('u2');
+
+      await service.deleteQuack({ id: 'a1', role: 'admin' } as Identity, 'q1');
+
+      expect(repository.deleteQuack).toHaveBeenCalledWith('q1');
+    });
+
     it('treats a missing quack as not found', async () => {
       const { repository, service } = setup(null);
 

@@ -45,7 +45,9 @@ async function main(): Promise<void> {
     .addCookieAuth('better-auth.session_token')
     .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  const document = SwaggerModule.createDocument(app, swaggerConfig, {
+    ignoreGlobalPrefix: true,
+  });
   SwaggerModule.setup('api/docs', app, document);
 
   // Print debug information for development purposes
