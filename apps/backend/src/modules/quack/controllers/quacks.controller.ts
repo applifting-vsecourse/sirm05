@@ -27,6 +27,7 @@ import {
 } from '@nestjs/swagger';
 import { map, Observable } from 'rxjs';
 import { CreateQuackDto } from './dto/create-quack.dto';
+import { CreateReplyDto } from './dto/create-reply.dto';
 import { PollResponseDto } from './dto/poll.response.dto';
 import { QuackResponseDto } from './dto/quack.response.dto';
 import { SearchQuacksDto } from './dto/search-quacks.dto';
@@ -71,7 +72,8 @@ export class QuacksController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Delete your own quack (admins: any quack), with its poll',
+    summary:
+      'Delete your own quack (admins: any): wipes its content and poll, keeps its replies',
   })
   @ApiResponse({ status: 204, description: 'Deleted' })
   @ApiResponse({ status: 401, description: 'Not signed in' })
@@ -103,6 +105,41 @@ export class QuacksController {
       pollOptions: body.pollOptions,
     });
     return QuackResponseDto.fromDomain(quack);
+  }
+
+  @Get(':id/replies')
+  @ApiOperation({ summary: 'Live replies to a quack, oldest first' })
+  @ApiResponse({ status: 200, type: [QuackResponseDto] })
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 404, description: 'Quack not found' })
+  async replies(
+    @User() user: Identity,
+    @Param('id') quackId: string,
+  ): Promise<QuackResponseDto[]> {
+    const replies = await this.quacksService.getReplies(user, quackId);
+    return replies.map(QuackResponseDto.fromDomain);
+  }
+
+  @Post(':id/replies')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Reply to a quack (not to a reply)' })
+  @ApiResponse({ status: 201, type: QuackResponseDto })
+  @ApiResponse({
+    status: 400,
+    description: 'Empty text, unknown mood, a poll, or replying to a reply',
+  })
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 404, description: 'Quack not found or deleted' })
+  async reply(
+    @User() user: Identity,
+    @Param('id') quackId: string,
+    @Body() body: CreateReplyDto,
+  ): Promise<QuackResponseDto> {
+    const reply = await this.quacksService.createReply(user, quackId, {
+      text: body.text,
+      mood: body.mood,
+    });
+    return QuackResponseDto.fromDomain(reply);
   }
 
   @Sse('poll-events')

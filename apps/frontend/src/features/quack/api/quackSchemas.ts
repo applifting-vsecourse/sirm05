@@ -35,6 +35,12 @@ export const quackSchema = z.object({
   createdAt: z.coerce.date(),
   user: quackUserSchema,
   poll: pollSchema.nullable(),
+  parentId: z.string().nullable(),
+  // A tombstone: its content is gone, it only holds its replies together (ADR 0004).
+  deleted: z.boolean(),
+  replyCount: z.number(),
+  // For a reply: who it answers; username null when that quack was deleted.
+  replyTo: z.object({ username: z.string().nullable() }).nullable(),
 })
 
 export const quacksSchema = z.array(quackSchema)

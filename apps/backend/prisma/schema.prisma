@@ -42,8 +42,16 @@ model Quack {
   // A quack with options is a poll; its text is the question.
   pollOptions PollOption[]
   pollVotes   PollVote[]
+  // A reply points at its quack. Restrict: replies belong to their authors and
+  // are never deleted with the quack (ADR 0004).
+  parent      Quack?       @relation("QuackReplies", fields: [parentId], references: [id], onDelete: Restrict)
+  parentId    String?
+  replies     Quack[]      @relation("QuackReplies")
+  // Set on delete, together with wiping text/mood/poll (ADR 0004).
+  deletedAt   DateTime?
 
   @@index([userId])
+  @@index([parentId])
   @@map("quack")
 }
 

@@ -1,6 +1,6 @@
 # User story: reply to a quack and see the replies under it
 
-**Status:** Ready
+**Status:** In progress
 **PR:** —
 
 **As a** quacker

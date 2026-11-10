@@ -31,4 +31,18 @@ export type Quack = {
   updatedAt: Date;
   user?: QuackAuthor;
   poll: Poll | null;
+  parentId: string | null;
+  // A tombstone: content wiped, row kept for its replies (ADR 0004).
+  deleted: boolean;
+  // Live replies only.
+  replyCount: number;
+  // For a reply: who it answers; username null when that quack was deleted.
+  replyTo: { username: string | null } | null;
+};
+
+// The facts the service checks before acting on a quack.
+export type QuackRef = {
+  userId: string;
+  parentId: string | null;
+  deleted: boolean;
 };

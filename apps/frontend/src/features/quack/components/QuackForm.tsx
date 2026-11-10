@@ -65,14 +65,16 @@ type FormValues = z.infer<typeof schema>
 
 // The picker starts on, and returns to, the user's default mood from Settings.
 // ref.focus() moves the cursor into the text, e.g. from an empty feed's "write your first quack".
+// With parentId the form posts a reply to that quack: text and mood, no poll.
 export type QuackFormHandle = { focus: () => void }
 type QuackFormProps = {
   defaultMood?: Mood | null
+  parentId?: string
   className?: string
   ref?: Ref<QuackFormHandle>
 }
 
-export function QuackForm({ defaultMood = null, className, ref }: QuackFormProps) {
+export function QuackForm({ defaultMood = null, parentId, className, ref }: QuackFormProps) {
   const addQuack = useAddQuack()
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -91,6 +93,7 @@ export function QuackForm({ defaultMood = null, className, ref }: QuackFormProps
         text: values.text,
         mood: values.mood ?? undefined,
         pollOptions: hasPoll ? values.pollOptions.map((option) => option.text) : undefined,
+        parentId,
       },
       { onSuccess: () => form.reset() },
     )
@@ -114,11 +117,11 @@ export function QuackForm({ defaultMood = null, className, ref }: QuackFormProps
           name="text"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>New quack</FormLabel>
+              <FormLabel>{parentId ? "Your reply" : "New quack"}</FormLabel>
               <FormControl>
                 <Textarea
-                  rows={3}
-                  placeholder="Quack something..."
+                  rows={parentId ? 2 : 3}
+                  placeholder={parentId ? "Quack back..." : "Quack something..."}
                   disabled={addQuack.isPending}
                   {...field}
                 />
@@ -185,7 +188,7 @@ export function QuackForm({ defaultMood = null, className, ref }: QuackFormProps
               </FormItem>
             )}
           />
-          {hasPoll ? (
+          {parentId ? null : hasPoll ? (
             <>
               {pollOptions.fields.length < POLL_MAX_OPTIONS ? (
                 <Button
@@ -235,7 +238,7 @@ export function QuackForm({ defaultMood = null, className, ref }: QuackFormProps
             disabled={addQuack.isPending}
           >
             {addQuack.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-            Quack
+            {parentId ? "Post reply" : "Quack"}
           </Button>
         </div>
       </form>

@@ -81,6 +81,7 @@ function QuacksPage() {
             canModerate={user?.role === "admin"}
             isMine={isMine}
             onWriteFirst={() => formRef.current?.focus()}
+            defaultMood={profile.defaultMood}
           />
         </QuackFeedTabs>
       </section>

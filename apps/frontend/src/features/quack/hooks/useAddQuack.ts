@@ -11,7 +11,7 @@ export function useAddQuack() {
   return useMutation({
     mutationFn: addQuack,
     onSuccess: async () => {
-      // Refresh the list so the new quack shows up.
+      // Refresh lists and threads so the new quack or reply (and its count) shows up.
       await queryClient.invalidateQueries({ queryKey: quackKeys.all() })
     },
   })
