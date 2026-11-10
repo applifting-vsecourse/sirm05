@@ -25,6 +25,8 @@ Deliberately sparse — this file grows as the team learns what it expects from 
 
 Markdown about developing this app goes in [`docs/`](docs/) — start at [`docs/README.md`](docs/README.md). Process and Definition of Done: [`docs/workflow.md`](docs/workflow.md).
 
+Before changing the data model or the structure of the app, check the ADR index in [`docs/decisions/README.md`](docs/decisions/README.md).
+
 ### UI controls come from the kit
 
 Need a control that isn't in `src/components/ui/`? Add it with `pnpm dlx shadcn@latest add <name>` — don't hand-roll one in a feature folder, even where a native input would do the job. One accessibility implementation to reason about beats a per-control judgement call.

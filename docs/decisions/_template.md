@@ -11,6 +11,10 @@
 
 <What we chose, stated plainly.>
 
+## Options considered
+
+<Each option you rejected, and why.>
+
 ## Consequences
 
 <What becomes easier, what becomes harder, what we now have to live with.>
