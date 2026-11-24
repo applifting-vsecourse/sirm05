@@ -13,6 +13,15 @@ class QuackUserDto {
   username!: string;
 }
 
+class ReplyToDto {
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'null when the quack replied to was deleted',
+  })
+  username!: string | null;
+}
+
 export class QuackResponseDto {
   @ApiProperty()
   id!: string;
@@ -35,6 +44,20 @@ export class QuackResponseDto {
   @ApiProperty({ type: PollResponseDto, nullable: true })
   poll!: PollResponseDto | null;
 
+  @ApiProperty({ type: String, nullable: true })
+  parentId!: string | null;
+
+  @ApiProperty({
+    description: 'Deleted: text is empty, show a placeholder (ADR 0004)',
+  })
+  deleted!: boolean;
+
+  @ApiProperty({ description: 'Live replies' })
+  replyCount!: number;
+
+  @ApiProperty({ type: ReplyToDto, nullable: true })
+  replyTo!: ReplyToDto | null;
+
   static fromDomain(quack: Quack): QuackResponseDto {
     if (!quack.user) {
       throw new Error(
@@ -53,6 +76,10 @@ export class QuackResponseDto {
         username: quack.user.username,
       },
       poll: quack.poll,
+      parentId: quack.parentId,
+      deleted: quack.deleted,
+      replyCount: quack.replyCount,
+      replyTo: quack.replyTo,
     };
   }
 }

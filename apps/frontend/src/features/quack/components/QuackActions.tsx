@@ -67,7 +67,8 @@ export function QuackActions({ quack, isMine = true }: { quack: Quack; isMine?: 
               {isMine ? "Delete this quack?" : `Delete @${quack.user.username}'s quack?`}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              &ldquo;{preview}&rdquo; will be gone for good, with its poll and votes.
+              &ldquo;{preview}&rdquo; will be gone for good, with its poll and votes. Replies under
+              it stay.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

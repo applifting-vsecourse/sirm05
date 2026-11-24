@@ -1,10 +1,6 @@
 import { PrismaService } from '@/core/prisma/prisma.service';
-import {
-  Prisma,
-  Quack as PrismaQuack,
-  User as PrismaUser,
-} from '@/generated/prisma/client';
-import { Poll, Quack, QuackMood } from '@/modules/quack/domain/quack';
+import { Prisma } from '@/generated/prisma/client';
+import { Poll, Quack, QuackMood, QuackRef } from '@/modules/quack/domain/quack';
 import { Injectable } from '@nestjs/common';
 
 // Everything a Poll needs, read for one viewer: options with vote counts, and
@@ -38,23 +34,47 @@ const mapPrismaPollToDomain = (quack: PrismaPoll): Poll | null =>
         myOptionId: quack.pollVotes[0]?.optionId ?? null,
       };
 
-const mapPrismaQuackToDomain = (
-  quack: PrismaQuack & PrismaPoll & { user?: PrismaUser },
-): Quack => ({
+// Everything a Quack needs: author, poll, live reply count and who a reply answers.
+const quackIncludeRest = {
+  user: true,
+  _count: { select: { replies: { where: { deletedAt: null } } } },
+  parent: {
+    select: { deletedAt: true, user: { select: { username: true } } },
+  },
+} satisfies Prisma.QuackInclude;
+
+type QuackInclude = PollInclude & typeof quackIncludeRest;
+
+const quackInclude = (viewerId: string): QuackInclude => ({
+  ...quackIncludeRest,
+  ...pollInclude(viewerId),
+});
+
+type PrismaFullQuack = Prisma.QuackGetPayload<{ include: QuackInclude }>;
+
+const mapPrismaQuackToDomain = (quack: PrismaFullQuack): Quack => ({
   id: quack.id,
   text: quack.text,
   mood: quack.mood,
   userId: quack.userId,
   createdAt: quack.createdAt,
   updatedAt: quack.updatedAt,
-  user: quack.user
-    ? {
-        id: quack.user.id,
-        name: quack.user.name,
-        username: quack.user.username ?? '',
-      }
-    : undefined,
+  user: {
+    id: quack.user.id,
+    name: quack.user.name,
+    username: quack.user.username ?? '',
+  },
   poll: mapPrismaPollToDomain(quack),
+  parentId: quack.parentId,
+  deleted: quack.deletedAt !== null,
+  replyCount: quack._count.replies,
+  replyTo: quack.parent
+    ? {
+        username: quack.parent.deletedAt
+          ? null
+          : (quack.parent.user.username ?? ''),
+      }
+    : null,
 });
 
 /**
@@ -65,8 +85,10 @@ const mapPrismaQuackToDomain = (
 export class QuackRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Every term must appear (case-insensitive) in the text, author name or username.
-  // With authorId, only that user's quacks.
+  // Without terms: the feed — top-level quacks, plus tombstones that still hold
+  // live replies (ADR 0004). With terms: search at any level; every term must
+  // appear (case-insensitive) in the text, author name or username.
+  // With authorId, only that user's quacks. Tombstones never match a search or Mine.
   async getQuacks(
     viewerId: string,
     terms: string[] = [],
@@ -75,6 +97,15 @@ export class QuackRepository {
     const quacks = await this.prisma.quack.findMany({
       where: {
         userId: authorId,
+        parentId: terms.length ? undefined : null,
+        ...(terms.length || authorId
+          ? { deletedAt: null }
+          : {
+              OR: [
+                { deletedAt: null },
+                { replies: { some: { deletedAt: null } } },
+              ],
+            }),
         AND: terms.map((term) => {
           // Prisma passes `contains` to ILIKE unescaped, so % and _ would act as wildcards.
           const escaped = term.replace(/[\\%_]/g, '\\$&');
@@ -88,7 +119,7 @@ export class QuackRepository {
           };
         }),
       },
-      include: { user: true, ...pollInclude(viewerId) },
+      include: quackInclude(viewerId),
       orderBy: { createdAt: 'desc' },
     });
     return quacks.map(mapPrismaQuackToDomain);
@@ -99,12 +130,16 @@ export class QuackRepository {
     mood?: QuackMood;
     pollOptions?: string[];
     userId: string;
+    parentId?: string;
   }): Promise<Quack> {
     const quack = await this.prisma.quack.create({
       data: {
         text: createQuackData.text,
         mood: createQuackData.mood,
         user: { connect: { id: createQuackData.userId } },
+        parent: createQuackData.parentId
+          ? { connect: { id: createQuackData.parentId } }
+          : undefined,
         pollOptions: {
           create: (createQuackData.pollOptions ?? []).map((text, position) => ({
             text,
@@ -112,23 +147,46 @@ export class QuackRepository {
           })),
         },
       },
-      include: { user: true, ...pollInclude(createQuackData.userId) },
+      include: quackInclude(createQuackData.userId),
     });
     return mapPrismaQuackToDomain(quack);
   }
 
-  // null when the quack doesn't exist.
-  async getQuackAuthorId(quackId: string): Promise<string | null> {
-    const quack = await this.prisma.quack.findUnique({
-      where: { id: quackId },
-      select: { userId: true },
+  // Live replies of a quack, oldest first.
+  async getReplies(parentId: string, viewerId: string): Promise<Quack[]> {
+    const replies = await this.prisma.quack.findMany({
+      where: { parentId, deletedAt: null },
+      include: quackInclude(viewerId),
+      orderBy: { createdAt: 'asc' },
     });
-    return quack?.userId ?? null;
+    return replies.map(mapPrismaQuackToDomain);
   }
 
-  // Poll options and votes go with it (onDelete: Cascade).
+  // null when the quack doesn't exist.
+  async getQuackRef(quackId: string): Promise<QuackRef | null> {
+    const quack = await this.prisma.quack.findUnique({
+      where: { id: quackId },
+      select: { userId: true, parentId: true, deletedAt: true },
+    });
+    return quack
+      ? {
+          userId: quack.userId,
+          parentId: quack.parentId,
+          deleted: quack.deletedAt !== null,
+        }
+      : null;
+  }
+
+  // ADR 0004: wipe the content, keep the row for its replies. Deleting the
+  // poll options takes their votes with them (onDelete: Cascade).
   async deleteQuack(quackId: string): Promise<void> {
-    await this.prisma.quack.deleteMany({ where: { id: quackId } });
+    await this.prisma.$transaction([
+      this.prisma.pollOption.deleteMany({ where: { quackId } }),
+      this.prisma.quack.updateMany({
+        where: { id: quackId, deletedAt: null },
+        data: { text: '', mood: null, deletedAt: new Date() },
+      }),
+    ]);
   }
 
   // null when the quack doesn't exist or has no poll.

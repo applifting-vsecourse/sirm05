@@ -17,6 +17,10 @@ const quack = (overrides: Partial<Quack> = {}): Quack => ({
   userId: "u1",
   createdAt: new Date("2026-01-01T12:00:00Z"),
   user: { id: "u1", name: "Caffeinated Duck", username: "CaffeinatedDuck" },
+  parentId: null,
+  deleted: false,
+  replyCount: 0,
+  replyTo: null,
   poll: null,
   ...overrides,
 })
@@ -121,5 +125,36 @@ describe("QuackList", () => {
 
     expect(screen.getByText(/No quacks match .pond../)).toBeInTheDocument()
     expect(screen.queryByText(/haven't posted/)).not.toBeInTheDocument()
+  })
+
+  describe("replies", () => {
+    it("shows the reply count, and no reply button on a reply", () => {
+      render(
+        <QuackList
+          quacks={[
+            quack({ replyCount: 2 }),
+            quack({ id: "r1", text: "a reply", parentId: "q0", replyTo: { username: "Bob" } }),
+          ]}
+        />,
+      )
+
+      expect(screen.getAllByRole("button", { name: /repl/i })).toHaveLength(1)
+      expect(screen.getByRole("button", { name: "2 replies" })).toBeInTheDocument()
+      expect(screen.getByText("Reply to @Bob")).toBeInTheDocument()
+    })
+
+    it("labels a reply to a deleted quack", () => {
+      render(<QuackList quacks={[quack({ parentId: "q0", replyTo: { username: null } })]} />)
+
+      expect(screen.getByText("Reply to a deleted quack")).toBeInTheDocument()
+    })
+
+    it("shows a deleted quack as a placeholder without its author, keeping its replies", () => {
+      render(<QuackList quacks={[quack({ deleted: true, text: "", replyCount: 1 })]} />)
+
+      expect(screen.getByText("This quack was deleted.")).toBeInTheDocument()
+      expect(screen.queryByText("Caffeinated Duck")).not.toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "1 reply" })).toBeInTheDocument()
+    })
   })
 })

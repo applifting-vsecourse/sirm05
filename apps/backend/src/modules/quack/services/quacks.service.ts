@@ -42,12 +42,20 @@ export class QuacksService {
     );
   }
 
+  // A deleted quack's thread stays readable — that's why it's a tombstone.
+  async getReplies(viewer: Identity, quackId: string): Promise<Quack[]> {
+    if (!(await this.quackRepository.getQuackRef(quackId))) {
+      throw new NotFoundException('Quack not found');
+    }
+    return this.quackRepository.getReplies(quackId, viewer.id);
+  }
+
   // Only the author or a moderator (admin) may delete — checked here, so calling
-  // the API directly doesn't get around it.
+  // the API directly doesn't get around it. A tombstone counts as gone (ADR 0004).
   async deleteQuack(user: Identity, quackId: string): Promise<void> {
-    const authorId = await this.quackRepository.getQuackAuthorId(quackId);
-    if (!authorId) throw new NotFoundException('Quack not found');
-    if (authorId !== user.id && user.role !== 'admin') {
+    const quack = await this.quackRepository.getQuackRef(quackId);
+    if (!quack || quack.deleted) throw new NotFoundException('Quack not found');
+    if (quack.userId !== user.id && user.role !== 'admin') {
       throw new ForbiddenException('You can only delete your own quacks');
     }
     await this.quackRepository.deleteQuack(quackId);
@@ -63,6 +71,29 @@ export class QuacksService {
       pollOptions: quackData.pollOptions,
       // the author is taken from the session, never from the request body
       userId: user.id,
+    });
+  }
+
+  // One level only: a reply can't be replied to. No polls in replies.
+  async createReply(
+    user: Identity,
+    parentId: string,
+    replyData: { text: string; mood?: QuackMood },
+  ): Promise<Quack> {
+    const parent = await this.quackRepository.getQuackRef(parentId);
+    if (!parent || parent.deleted) {
+      throw new NotFoundException('Quack not found');
+    }
+    if (parent.parentId) {
+      throw new BadRequestException(
+        'You can only reply to a quack, not a reply',
+      );
+    }
+    return this.quackRepository.createQuack({
+      text: replyData.text,
+      mood: replyData.mood,
+      userId: user.id,
+      parentId,
     });
   }
 

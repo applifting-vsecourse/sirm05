@@ -10,7 +10,8 @@ export function useDeleteQuack() {
   return useMutation({
     mutationFn: deleteQuack,
     // Stay pending until the refetch lands, so the quack is gone when the dialog closes.
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: quackKeys.lists() }),
+    // Threads too: a deleted reply leaves its thread (ADR 0004).
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: quackKeys.all() }),
     onError: () => {
       toast.error("Your quack wasn't deleted. Please try again.")
     },

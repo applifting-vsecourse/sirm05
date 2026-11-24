@@ -17,6 +17,10 @@ const quack: Quack = {
   userId: "u1",
   createdAt: new Date("2026-01-01T12:00:00Z"),
   user: { id: "u1", name: "Caffeinated Duck", username: "CaffeinatedDuck" },
+  parentId: null,
+  deleted: false,
+  replyCount: 0,
+  replyTo: null,
   poll: null,
 }
 

@@ -17,7 +17,7 @@ Today a quack is forever and my posts are mixed into everyone else's. This is th
 2. Choosing Delete opens a confirmation dialog that shows the start of the quack's text. Cancel closes the dialog and changes nothing.
 3. Confirming shows a pending state on the confirm button. When the server confirms, the dialog closes and the quack disappears from the feed, in both tabs and in search results.
 4. If deleting fails, the quack stays in the feed and I see a message that it was not deleted.
-5. Deleting is permanent: the quack, its poll and the poll's votes are removed from the database. There is no undo.
+5. Deleting is permanent: the quack, its poll and the poll's votes are removed from the database. There is no undo. _Superseded by [ADR 0004](../decisions/0004-delete-is-a-tombstone.md): the row stays as a content-free tombstone._
 6. Nobody can delete someone else's quack, not even by calling the API directly: `DELETE /api/quacks/:id` on another user's quack returns 403 and deletes nothing. A quack that doesn't exist returns 404. A signed-out request returns 401.
 
 ### Filter

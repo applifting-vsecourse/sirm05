@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { formatDate } from "@/lib/date"
 
@@ -8,10 +10,33 @@ import { UsersName } from "@/features/quack/components/UsersName"
 import { UsersUserName } from "@/features/quack/components/UsersUserName"
 
 // isMine: the viewer wrote it; canModerate: the viewer is an admin. Either gets its
-// actions (the API checks again).
-type QuackItemProps = { quack: Quack; isMine?: boolean; canModerate?: boolean }
+// actions (the API checks again). isInThread: shown under its quack, so "Reply to" is
+// implied. children: the thread, composed by the list.
+type QuackItemProps = {
+  quack: Quack
+  isMine?: boolean
+  canModerate?: boolean
+  isInThread?: boolean
+  children?: ReactNode
+}
 
-export function QuackItem({ quack, isMine = false, canModerate = false }: QuackItemProps) {
+export function QuackItem({
+  quack,
+  isMine = false,
+  canModerate = false,
+  isInThread = false,
+  children,
+}: QuackItemProps) {
+  // A deleted quack keeps only its place for the replies under it (ADR 0004).
+  if (quack.deleted) {
+    return (
+      <article className="flex w-full flex-col gap-1 border-b border-border pt-2 pb-4 last:border-b-0">
+        <p className="text-sm text-muted-foreground italic">This quack was deleted.</p>
+        {children}
+      </article>
+    )
+  }
+
   const { name, username } = quack.user
 
   const initials = name
@@ -23,7 +48,7 @@ export function QuackItem({ quack, isMine = false, canModerate = false }: QuackI
 
   return (
     <article className="flex w-full gap-4 border-b border-border pt-2 pb-4 last:border-b-0">
-      <Avatar className="size-12">
+      <Avatar className={isInThread ? "size-8" : "size-12"}>
         <AvatarFallback>{initials}</AvatarFallback>
       </Avatar>
 
@@ -49,6 +74,13 @@ export function QuackItem({ quack, isMine = false, canModerate = false }: QuackI
             />
           ) : null}
         </div>
+        {quack.replyTo && !isInThread ? (
+          <p className="text-xs text-muted-foreground">
+            {quack.replyTo.username === null
+              ? "Reply to a deleted quack"
+              : `Reply to @${quack.replyTo.username}`}
+          </p>
+        ) : null}
         <p className="text-sm break-words whitespace-pre-line">{quack.text}</p>
         {quack.poll ? (
           <QuackPoll
@@ -56,6 +88,7 @@ export function QuackItem({ quack, isMine = false, canModerate = false }: QuackI
             poll={quack.poll}
           />
         ) : null}
+        {children}
       </div>
     </article>
   )

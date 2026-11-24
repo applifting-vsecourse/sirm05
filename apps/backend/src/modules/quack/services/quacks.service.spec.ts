@@ -1,6 +1,11 @@
 // Example unit test — the pattern to copy for your own services.
 // The repository is mocked, so the test exercises the service in isolation.
-import { Poll, PollCounts, Quack } from '@/modules/quack/domain/quack';
+import {
+  Poll,
+  PollCounts,
+  Quack,
+  QuackRef,
+} from '@/modules/quack/domain/quack';
 import { QuackRepository } from '@/modules/quack/repositories/quack.repository';
 import { Identity } from '@/shared/auth/domain/identity';
 import {
@@ -20,6 +25,17 @@ const aQuack = (overrides: Partial<Quack> = {}): Quack => ({
   updatedAt: new Date('2026-01-01T12:00:00Z'),
   user: { id: 'u1', name: 'Caffeinated Duck', username: 'CaffeinatedDuck' },
   poll: null,
+  parentId: null,
+  deleted: false,
+  replyCount: 0,
+  replyTo: null,
+  ...overrides,
+});
+
+const aRef = (overrides: Partial<QuackRef> = {}): QuackRef => ({
+  userId: 'u1',
+  parentId: null,
+  deleted: false,
   ...overrides,
 });
 
@@ -70,15 +86,15 @@ describe('QuacksService', () => {
 
   describe('deleting', () => {
     const setup = (
-      authorId: string | null,
+      ref: QuackRef | null,
     ): { repository: MockProxy<QuackRepository>; service: QuacksService } => {
       const repository = mock<QuackRepository>();
-      repository.getQuackAuthorId.mockResolvedValue(authorId);
+      repository.getQuackRef.mockResolvedValue(ref);
       return { repository, service: new QuacksService(repository) };
     };
 
     it('deletes the signed-in user’s own quack', async () => {
-      const { repository, service } = setup('u1');
+      const { repository, service } = setup(aRef());
 
       await service.deleteQuack(user, 'q1');
 
@@ -86,7 +102,7 @@ describe('QuacksService', () => {
     });
 
     it('refuses to delete someone else’s quack', async () => {
-      const { repository, service } = setup('u2');
+      const { repository, service } = setup(aRef({ userId: 'u2' }));
 
       await expect(service.deleteQuack(user, 'q1')).rejects.toBeInstanceOf(
         ForbiddenException,
@@ -95,7 +111,7 @@ describe('QuacksService', () => {
     });
 
     it('lets an admin delete someone else’s quack', async () => {
-      const { repository, service } = setup('u2');
+      const { repository, service } = setup(aRef({ userId: 'u2' }));
 
       await service.deleteQuack({ id: 'a1', role: 'admin' } as Identity, 'q1');
 
@@ -109,6 +125,79 @@ describe('QuacksService', () => {
         NotFoundException,
       );
       expect(repository.deleteQuack).not.toHaveBeenCalled();
+    });
+
+    it('treats an already deleted quack as not found', async () => {
+      const { repository, service } = setup(aRef({ deleted: true }));
+
+      await expect(service.deleteQuack(user, 'q1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(repository.deleteQuack).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('replies', () => {
+    const setup = (
+      parent: QuackRef | null,
+    ): { repository: MockProxy<QuackRepository>; service: QuacksService } => {
+      const repository = mock<QuackRepository>();
+      repository.getQuackRef.mockResolvedValue(parent);
+      return { repository, service: new QuacksService(repository) };
+    };
+
+    it('creates a reply owned by the signed-in user', async () => {
+      const { repository, service } = setup(aRef({ userId: 'u2' }));
+      const reply = aQuack({ id: 'r1', parentId: 'q1' });
+      repository.createQuack.mockResolvedValue(reply);
+
+      await expect(
+        service.createReply(user, 'q1', { text: 'hi', mood: 'happy' }),
+      ).resolves.toEqual(reply);
+      expect(repository.createQuack).toHaveBeenCalledWith({
+        text: 'hi',
+        mood: 'happy',
+        userId: 'u1',
+        parentId: 'q1',
+      });
+    });
+
+    it('refuses to reply to a reply', async () => {
+      const { repository, service } = setup(aRef({ parentId: 'q0' }));
+
+      await expect(
+        service.createReply(user, 'r1', { text: 'hi' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(repository.createQuack).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['missing', null],
+      ['deleted', aRef({ deleted: true })],
+    ])('refuses to reply to a %s quack', async (_, parent) => {
+      const { repository, service } = setup(parent);
+
+      await expect(
+        service.createReply(user, 'q1', { text: 'hi' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(repository.createQuack).not.toHaveBeenCalled();
+    });
+
+    it('lists the replies of a deleted quack — its thread stays', async () => {
+      const { repository, service } = setup(aRef({ deleted: true }));
+      const replies = [aQuack({ id: 'r1', parentId: 'q1' })];
+      repository.getReplies.mockResolvedValue(replies);
+
+      await expect(service.getReplies(user, 'q1')).resolves.toEqual(replies);
+      expect(repository.getReplies).toHaveBeenCalledWith('q1', 'u1');
+    });
+
+    it('treats replies of a missing quack as not found', async () => {
+      const { service } = setup(null);
+
+      await expect(service.getReplies(user, 'q1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
   });
 

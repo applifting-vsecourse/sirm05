@@ -2,9 +2,11 @@ import { Loader2, RefreshCw } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { type Mood } from "@/lib/mood"
 
 import type { Quack } from "@/features/quack/api/quackSchemas"
 import { QuackItem } from "@/features/quack/components/QuackItem"
+import { QuackThread } from "@/features/quack/components/QuackThread"
 
 type QuackListProps = {
   quacks: Quack[]
@@ -19,6 +21,8 @@ type QuackListProps = {
   canModerate?: boolean
   isMine?: boolean
   onWriteFirst?: () => void
+  // Preselected in reply forms, like in the new-quack form.
+  defaultMood?: Mood | null
 }
 
 export function QuackList({
@@ -32,6 +36,7 @@ export function QuackList({
   canModerate,
   isMine,
   onWriteFirst,
+  defaultMood,
 }: QuackListProps) {
   return (
     <div className="flex flex-col">
@@ -103,7 +108,17 @@ export function QuackList({
           quack={quack}
           isMine={quack.userId === viewerId}
           canModerate={canModerate}
-        />
+        >
+          {/* Replies only show up in search results; they can't be replied to. */}
+          {quack.parentId === null ? (
+            <QuackThread
+              quack={quack}
+              viewerId={viewerId}
+              canModerate={canModerate}
+              defaultMood={defaultMood}
+            />
+          ) : null}
+        </QuackItem>
       ))}
     </div>
   )
