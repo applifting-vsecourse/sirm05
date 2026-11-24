@@ -1,7 +1,7 @@
 # User story: reply to a quack and see the replies under it
 
-**Status:** In progress
-**PR:** —
+**Status:** Done
+**PR:** [#7](https://github.com/applifting-vsecourse/sirm05/pull/7)
 
 **As a** quacker
 **I want to** reply to a quack and see the replies under it
