@@ -34,6 +34,8 @@ const quack: Quack = {
   parentId: null,
   deleted: false,
   replyCount: 0,
+  likeCount: 0,
+  likedByMe: false,
   replyTo: null,
   poll: {
     options: [

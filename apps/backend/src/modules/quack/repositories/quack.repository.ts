@@ -43,17 +43,28 @@ const mapPrismaPollToDomain = (quack: PrismaPoll): Poll | null =>
 // Everything a Quack needs: author, poll, live reply count and who a reply answers.
 const quackIncludeRest = {
   user: true,
-  _count: { select: { replies: { where: { deletedAt: null } } } },
+  _count: {
+    select: { replies: { where: { deletedAt: null } }, likes: true },
+  },
   parent: {
     select: { deletedAt: true, user: { select: { username: true } } },
   },
 } satisfies Prisma.QuackInclude;
 
-type QuackInclude = PollInclude & typeof quackIncludeRest;
+type LikesInclude = {
+  likes: { where: { userId: string }; select: { userId: true } };
+};
+
+const likesInclude = (viewerId: string): LikesInclude => ({
+  likes: { where: { userId: viewerId }, select: { userId: true } },
+});
+
+type QuackInclude = PollInclude & LikesInclude & typeof quackIncludeRest;
 
 const quackInclude = (viewerId: string): QuackInclude => ({
   ...quackIncludeRest,
   ...pollInclude(viewerId),
+  ...likesInclude(viewerId),
 });
 
 type PrismaFullQuack = Prisma.QuackGetPayload<{ include: QuackInclude }>;
@@ -74,6 +85,7 @@ const mapPrismaQuackToDomain = (quack: PrismaFullQuack): Quack => ({
   parentId: quack.parentId,
   deleted: quack.deletedAt !== null,
   replyCount: quack._count.replies,
+  likes: { likeCount: quack._count.likes, likedByMe: quack.likes.length > 0 },
   replyTo: quack.parent
     ? {
         username: quack.parent.deletedAt
@@ -188,6 +200,7 @@ export class QuackRepository {
   async deleteQuack(quackId: string): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.pollOption.deleteMany({ where: { quackId } }),
+      this.prisma.quackLike.deleteMany({ where: { quackId } }),
       this.prisma.quack.updateMany({
         where: { id: quackId, deletedAt: null },
         data: { text: '', mood: null, deletedAt: new Date() },
@@ -219,15 +232,24 @@ export class QuackRepository {
   }
 
   // One row per (quack, user): liking twice stores nothing new (ADR 0005).
-  async like(_quackId: string, _userId: string): Promise<void> {
-    throw new Error('not implemented');
+  async like(quackId: string, userId: string): Promise<void> {
+    // INSERT ... ON CONFLICT DO NOTHING: safe under simultaneous likes. (An upsert
+    // with an empty update falls back to select-then-insert and races.)
+    await this.prisma.quackLike.createMany({
+      data: { quackId, userId },
+      skipDuplicates: true,
+    });
   }
 
-  async unlike(_quackId: string, _userId: string): Promise<void> {
-    throw new Error('not implemented');
+  async unlike(quackId: string, userId: string): Promise<void> {
+    await this.prisma.quackLike.deleteMany({ where: { quackId, userId } });
   }
 
-  async getLikes(_quackId: string, _viewerId: string): Promise<Likes> {
-    throw new Error('not implemented');
+  async getLikes(quackId: string, viewerId: string): Promise<Likes> {
+    const [likeCount, mine] = await Promise.all([
+      this.prisma.quackLike.count({ where: { quackId } }),
+      this.prisma.quackLike.count({ where: { quackId, userId: viewerId } }),
+    ]);
+    return { likeCount, likedByMe: mine > 0 };
   }
 }

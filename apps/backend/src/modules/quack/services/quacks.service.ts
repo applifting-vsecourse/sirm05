@@ -114,16 +114,25 @@ export class QuacksService {
   }
 
   // Anyone signed in may like any live quack, their own and replies included.
-  async likeQuack(_user: Identity, _quackId: string): Promise<Likes> {
-    throw new Error('not implemented');
+  async likeQuack(user: Identity, quackId: string): Promise<Likes> {
+    await this.getLiveQuackOrThrow(quackId);
+    await this.quackRepository.like(quackId, user.id);
+    return this.quackRepository.getLikes(quackId, user.id);
   }
 
-  async unlikeQuack(_user: Identity, _quackId: string): Promise<Likes> {
-    throw new Error('not implemented');
+  async unlikeQuack(user: Identity, quackId: string): Promise<Likes> {
+    await this.getLiveQuackOrThrow(quackId);
+    await this.quackRepository.unlike(quackId, user.id);
+    return this.quackRepository.getLikes(quackId, user.id);
   }
 
   pollCountsStream(): Observable<PollCounts> {
     return this.pollCounts.asObservable();
+  }
+
+  private async getLiveQuackOrThrow(quackId: string): Promise<void> {
+    const quack = await this.quackRepository.getQuackRef(quackId);
+    if (!quack || quack.deleted) throw new NotFoundException('Quack not found');
   }
 
   private async getPollOrThrow(quackId: string, user: Identity): Promise<Poll> {

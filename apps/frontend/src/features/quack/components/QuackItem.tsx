@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { formatDate } from "@/lib/date"
 
 import type { Quack } from "@/features/quack/api/quackSchemas"
+import { LikeButton } from "@/features/quack/components/LikeButton"
 import { QuackActions } from "@/features/quack/components/QuackActions"
 import { QuackPoll } from "@/features/quack/components/QuackPoll"
 import { UsersName } from "@/features/quack/components/UsersName"
@@ -88,6 +89,10 @@ export function QuackItem({
             poll={quack.poll}
           />
         ) : null}
+        <LikeButton
+          quackId={quack.id}
+          likes={quack}
+        />
         {children}
       </div>
     </article>

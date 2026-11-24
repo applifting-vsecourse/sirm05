@@ -39,6 +39,8 @@ export type Quack = {
   deleted: boolean;
   // Live replies only.
   replyCount: number;
+  // Always loaded by the repository; optional like `user`.
+  likes?: Likes;
   // For a reply: who it answers; username null when that quack was deleted.
   replyTo: { username: string | null } | null;
 };
