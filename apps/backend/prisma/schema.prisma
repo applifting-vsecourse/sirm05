@@ -42,6 +42,7 @@ model Quack {
   // A quack with options is a poll; its text is the question.
   pollOptions PollOption[]
   pollVotes   PollVote[]
+  likes       QuackLike[]
   // A reply points at its quack. Restrict: replies belong to their authors and
   // are never deleted with the quack (ADR 0004).
   parent      Quack?       @relation("QuackReplies", fields: [parentId], references: [id], onDelete: Restrict)
@@ -133,18 +134,19 @@ model Verification {
 }
 
 model User {
-  id            String     @id
+  id            String      @id
   name          String
   email         String
   emailVerified Boolean
-  image         String?    @db.Text
+  image         String?     @db.Text
   createdAt     DateTime
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
   quacks        Quack[]
   pollVotes     PollVote[]
-  role          UserRole   @default(user)
+  quackLikes    QuackLike[]
+  role          UserRole    @default(user)
 
   username        String?    @db.VarChar(50)
   displayUsername String?    @db.VarChar(50)
@@ -154,4 +156,17 @@ model User {
   @@unique([email])
   @@unique([username])
   @@map("user")
+}
+
+// One like per person per quack (ADR 0005).
+model QuackLike {
+  quack     Quack    @relation(fields: [quackId], references: [id], onDelete: Cascade)
+  quackId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@id([quackId, userId])
+  @@index([userId])
+  @@map("quack_like")
 }

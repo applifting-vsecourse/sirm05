@@ -27,7 +27,10 @@ export const pollCountsSchema = z.object({
   options: z.array(z.object({ id: z.string(), votes: z.number() })),
 })
 
-export const quackSchema = z.object({
+// A quack's likes as the viewer sees them (ADR 0005).
+export const likesSchema = z.object({ likeCount: z.number(), likedByMe: z.boolean() })
+
+export const quackSchema = likesSchema.extend({
   id: z.string(),
   text: z.string(),
   mood: moodSchema.nullable(),
@@ -46,5 +49,6 @@ export const quackSchema = z.object({
 export const quacksSchema = z.array(quackSchema)
 
 export type Quack = z.infer<typeof quackSchema>
+export type Likes = z.infer<typeof likesSchema>
 export type Poll = z.infer<typeof pollSchema>
 export type PollCounts = z.infer<typeof pollCountsSchema>

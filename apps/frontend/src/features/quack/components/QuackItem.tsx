@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { formatDate } from "@/lib/date"
 
 import type { Quack } from "@/features/quack/api/quackSchemas"
+import { LikeButton } from "@/features/quack/components/LikeButton"
 import { QuackActions } from "@/features/quack/components/QuackActions"
 import { QuackPoll } from "@/features/quack/components/QuackPoll"
 import { UsersName } from "@/features/quack/components/UsersName"
@@ -88,7 +89,14 @@ export function QuackItem({
             poll={quack.poll}
           />
         ) : null}
-        {children}
+        {/* One row of actions; the thread's own panel wraps below it. */}
+        <div className="flex flex-wrap items-center gap-2">
+          {children}
+          <LikeButton
+            quackId={quack.id}
+            likes={quack}
+          />
+        </div>
       </div>
     </article>
   )

@@ -1,4 +1,5 @@
 import {
+  Likes,
   Poll,
   PollCounts,
   Quack,
@@ -112,8 +113,26 @@ export class QuacksService {
     return this.publishCounts(quackId, user);
   }
 
+  // Anyone signed in may like any live quack, their own and replies included.
+  async likeQuack(user: Identity, quackId: string): Promise<Likes> {
+    await this.getLiveQuackOrThrow(quackId);
+    await this.quackRepository.like(quackId, user.id);
+    return this.quackRepository.getLikes(quackId, user.id);
+  }
+
+  async unlikeQuack(user: Identity, quackId: string): Promise<Likes> {
+    await this.getLiveQuackOrThrow(quackId);
+    await this.quackRepository.unlike(quackId, user.id);
+    return this.quackRepository.getLikes(quackId, user.id);
+  }
+
   pollCountsStream(): Observable<PollCounts> {
     return this.pollCounts.asObservable();
+  }
+
+  private async getLiveQuackOrThrow(quackId: string): Promise<void> {
+    const quack = await this.quackRepository.getQuackRef(quackId);
+    if (!quack || quack.deleted) throw new NotFoundException('Quack not found');
   }
 
   private async getPollOrThrow(quackId: string, user: Identity): Promise<Poll> {

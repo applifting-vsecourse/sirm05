@@ -9,6 +9,9 @@ import { QuackList } from "@/features/quack/components/QuackList"
 vi.mock("@/features/quack/hooks/useDeleteQuack", () => ({
   useDeleteQuack: () => ({ mutate: vi.fn(), isPending: false }),
 }))
+vi.mock("@/features/quack/hooks/useLike", () => ({
+  useLike: () => ({ mutate: vi.fn() }),
+}))
 
 const quack = (overrides: Partial<Quack> = {}): Quack => ({
   id: "q1",
@@ -20,6 +23,8 @@ const quack = (overrides: Partial<Quack> = {}): Quack => ({
   parentId: null,
   deleted: false,
   replyCount: 0,
+  likeCount: 0,
+  likedByMe: false,
   replyTo: null,
   poll: null,
   ...overrides,

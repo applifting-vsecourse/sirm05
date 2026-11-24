@@ -16,6 +16,9 @@ export type PollCounts = {
   options: Pick<PollOption, 'id' | 'votes'>[];
 };
 
+// A quack's likes as one viewer sees them (ADR 0005).
+export type Likes = { likeCount: number; likedByMe: boolean };
+
 export type QuackAuthor = {
   id: string;
   name: string;
@@ -36,6 +39,8 @@ export type Quack = {
   deleted: boolean;
   // Live replies only.
   replyCount: number;
+  // Always loaded by the repository; optional like `user`.
+  likes?: Likes;
   // For a reply: who it answers; username null when that quack was deleted.
   replyTo: { username: string | null } | null;
 };

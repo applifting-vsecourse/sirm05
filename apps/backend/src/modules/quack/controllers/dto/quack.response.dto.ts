@@ -55,13 +55,19 @@ export class QuackResponseDto {
   @ApiProperty({ description: 'Live replies' })
   replyCount!: number;
 
+  @ApiProperty()
+  likeCount!: number;
+
+  @ApiProperty({ description: 'Whether the viewer liked it' })
+  likedByMe!: boolean;
+
   @ApiProperty({ type: ReplyToDto, nullable: true })
   replyTo!: ReplyToDto | null;
 
   static fromDomain(quack: Quack): QuackResponseDto {
-    if (!quack.user) {
+    if (!quack.user || !quack.likes) {
       throw new Error(
-        `QuackResponseDto.fromDomain expected quack.user to be loaded for quack ${quack.id}`,
+        `QuackResponseDto.fromDomain expected quack.user and quack.likes to be loaded for quack ${quack.id}`,
       );
     }
     return {
@@ -79,6 +85,7 @@ export class QuackResponseDto {
       parentId: quack.parentId,
       deleted: quack.deleted,
       replyCount: quack.replyCount,
+      ...quack.likes,
       replyTo: quack.replyTo,
     };
   }
