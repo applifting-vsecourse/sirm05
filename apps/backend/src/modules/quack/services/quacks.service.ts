@@ -1,4 +1,5 @@
 import {
+  Likes,
   Poll,
   PollCounts,
   Quack,
@@ -110,6 +111,15 @@ export class QuacksService {
     await this.getPollOrThrow(quackId, user);
     await this.quackRepository.withdrawVote(quackId, user.id);
     return this.publishCounts(quackId, user);
+  }
+
+  // Anyone signed in may like any live quack, their own and replies included.
+  async likeQuack(_user: Identity, _quackId: string): Promise<Likes> {
+    throw new Error('not implemented');
+  }
+
+  async unlikeQuack(_user: Identity, _quackId: string): Promise<Likes> {
+    throw new Error('not implemented');
   }
 
   pollCountsStream(): Observable<PollCounts> {

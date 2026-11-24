@@ -16,6 +16,9 @@ export type PollCounts = {
   options: Pick<PollOption, 'id' | 'votes'>[];
 };
 
+// A quack's likes as one viewer sees them (ADR 0005).
+export type Likes = { likeCount: number; likedByMe: boolean };
+
 export type QuackAuthor = {
   id: string;
   name: string;

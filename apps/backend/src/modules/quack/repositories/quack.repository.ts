@@ -1,6 +1,12 @@
 import { PrismaService } from '@/core/prisma/prisma.service';
 import { Prisma } from '@/generated/prisma/client';
-import { Poll, Quack, QuackMood, QuackRef } from '@/modules/quack/domain/quack';
+import {
+  Likes,
+  Poll,
+  Quack,
+  QuackMood,
+  QuackRef,
+} from '@/modules/quack/domain/quack';
 import { Injectable } from '@nestjs/common';
 
 // Everything a Poll needs, read for one viewer: options with vote counts, and
@@ -210,5 +216,18 @@ export class QuackRepository {
 
   async withdrawVote(quackId: string, userId: string): Promise<void> {
     await this.prisma.pollVote.deleteMany({ where: { quackId, userId } });
+  }
+
+  // One row per (quack, user): liking twice stores nothing new (ADR 0005).
+  async like(_quackId: string, _userId: string): Promise<void> {
+    throw new Error('not implemented');
+  }
+
+  async unlike(_quackId: string, _userId: string): Promise<void> {
+    throw new Error('not implemented');
+  }
+
+  async getLikes(_quackId: string, _viewerId: string): Promise<Likes> {
+    throw new Error('not implemented');
   }
 }

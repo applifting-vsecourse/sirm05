@@ -28,6 +28,7 @@ import {
 import { map, Observable } from 'rxjs';
 import { CreateQuackDto } from './dto/create-quack.dto';
 import { CreateReplyDto } from './dto/create-reply.dto';
+import { LikesResponseDto } from './dto/likes.response.dto';
 import { PollResponseDto } from './dto/poll.response.dto';
 import { QuackResponseDto } from './dto/quack.response.dto';
 import { SearchQuacksDto } from './dto/search-quacks.dto';
@@ -140,6 +141,30 @@ export class QuacksController {
       mood: body.mood,
     });
     return QuackResponseDto.fromDomain(reply);
+  }
+
+  @Put(':id/like')
+  @ApiOperation({ summary: 'Like a quack (again is a no-op)' })
+  @ApiResponse({ status: 200, type: LikesResponseDto })
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 404, description: 'Quack not found or deleted' })
+  async like(
+    @User() user: Identity,
+    @Param('id') quackId: string,
+  ): Promise<LikesResponseDto> {
+    return this.quacksService.likeQuack(user, quackId);
+  }
+
+  @Delete(':id/like')
+  @ApiOperation({ summary: 'Take your like back (none given is a no-op)' })
+  @ApiResponse({ status: 200, type: LikesResponseDto })
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 404, description: 'Quack not found or deleted' })
+  async unlike(
+    @User() user: Identity,
+    @Param('id') quackId: string,
+  ): Promise<LikesResponseDto> {
+    return this.quacksService.unlikeQuack(user, quackId);
   }
 
   @Sse('poll-events')

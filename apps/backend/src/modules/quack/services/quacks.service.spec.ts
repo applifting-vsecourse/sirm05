@@ -342,3 +342,73 @@ describe('toSearchTerms', () => {
     expect(toSearchTerms(search)).toEqual(terms);
   });
 });
+
+// Cases R1–R6: docs/user-stories/quack-likes.cases.md
+describe('QuacksService likes', () => {
+  const likes = { likeCount: 1, likedByMe: true };
+  let repository: MockProxy<QuackRepository>;
+  let service: QuacksService;
+
+  beforeEach(() => {
+    repository = mock<QuackRepository>();
+    repository.getLikes.mockResolvedValue(likes);
+    service = new QuacksService(repository);
+  });
+
+  it('R1: liking a quack that does not exist is 404 and stores nothing', async () => {
+    repository.getQuackRef.mockResolvedValue(null);
+
+    await expect(service.likeQuack(user, 'q1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(repository.like).not.toHaveBeenCalled();
+  });
+
+  it('R2: liking a deleted quack is 404 and stores nothing', async () => {
+    repository.getQuackRef.mockResolvedValue(aRef({ deleted: true }));
+
+    await expect(service.likeQuack(user, 'q1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(repository.like).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['does not exist', null],
+    ['is deleted', aRef({ deleted: true })],
+  ])(
+    'R3: taking back a like on a quack that %s is 404 and removes nothing',
+    async (_, ref) => {
+      repository.getQuackRef.mockResolvedValue(ref);
+
+      await expect(service.unlikeQuack(user, 'q1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(repository.unlike).not.toHaveBeenCalled();
+    },
+  );
+
+  it('R4: liking stores the like for the session user and returns the likes', async () => {
+    repository.getQuackRef.mockResolvedValue(aRef({ userId: 'someone-else' }));
+
+    await expect(service.likeQuack(user, 'q1')).resolves.toEqual(likes);
+    expect(repository.like).toHaveBeenCalledWith('q1', user.id);
+    expect(repository.getLikes).toHaveBeenCalledWith('q1', user.id);
+  });
+
+  it('R5: I can like my own quack', async () => {
+    repository.getQuackRef.mockResolvedValue(aRef({ userId: user.id }));
+
+    await expect(service.likeQuack(user, 'q1')).resolves.toEqual(likes);
+    expect(repository.like).toHaveBeenCalledWith('q1', user.id);
+  });
+
+  it('R6: taking a like back removes the session user like and returns the likes', async () => {
+    const after = { likeCount: 0, likedByMe: false };
+    repository.getQuackRef.mockResolvedValue(aRef());
+    repository.getLikes.mockResolvedValue(after);
+
+    await expect(service.unlikeQuack(user, 'q1')).resolves.toEqual(after);
+    expect(repository.unlike).toHaveBeenCalledWith('q1', user.id);
+  });
+});
