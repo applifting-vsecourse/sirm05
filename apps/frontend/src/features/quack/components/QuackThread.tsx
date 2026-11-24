@@ -27,7 +27,8 @@ export function QuackThread({ quack, viewerId, canModerate, defaultMood }: Quack
   if (quack.deleted && quack.replyCount === 0) return null
 
   return (
-    <div className="flex flex-col gap-2">
+    // `contents`: the toggle joins the item's action row; the panel takes a full line.
+    <div className="contents">
       <Button
         variant="ghost"
         size="sm"
@@ -44,7 +45,7 @@ export function QuackThread({ quack, viewerId, canModerate, defaultMood }: Quack
       {isOpen ? (
         <div
           id={threadId}
-          className="flex flex-col gap-3 border-l border-border pl-4"
+          className="flex basis-full flex-col gap-3 border-l border-border pl-4"
         >
           <Replies
             quackId={quack.id}

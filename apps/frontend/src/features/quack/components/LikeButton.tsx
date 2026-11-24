@@ -15,7 +15,7 @@ export function LikeButton({ quackId, likes }: { quackId: string; likes: Likes }
       aria-label="Like"
       pressed={likes.likedByMe}
       onPressedChange={(isLiked) => like.mutate(isLiked)}
-      className="self-start text-muted-foreground data-[state=on]:bg-transparent data-[state=on]:text-primary [&[data-state=on]_svg]:fill-current"
+      className="text-muted-foreground data-[state=on]:bg-transparent data-[state=on]:text-primary [&[data-state=on]_svg]:fill-current"
     >
       <Heart />
       {likes.likeCount}
