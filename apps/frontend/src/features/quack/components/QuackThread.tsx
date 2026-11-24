@@ -45,7 +45,7 @@ export function QuackThread({ quack, viewerId, canModerate, defaultMood }: Quack
       {isOpen ? (
         <div
           id={threadId}
-          className="flex basis-full flex-col gap-3 border-l border-border pl-4"
+          className="order-last flex basis-full flex-col gap-3 border-l border-border pl-4"
         >
           <Replies
             quackId={quack.id}

@@ -91,11 +91,11 @@ export function QuackItem({
         ) : null}
         {/* One row of actions; the thread's own panel wraps below it. */}
         <div className="flex flex-wrap items-center gap-2">
+          {children}
           <LikeButton
             quackId={quack.id}
             likes={quack}
           />
-          {children}
         </div>
       </div>
     </article>
