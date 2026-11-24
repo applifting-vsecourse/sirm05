@@ -50,3 +50,86 @@ jobs:
 
       - name: Build frontend
         run: pnpm frontend build
+
+  test-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: quacker
+          POSTGRES_PASSWORD: quacker
+          POSTGRES_DB: quacker
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U quacker" --health-interval 3s
+          --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://quacker:quacker@localhost:5432/quacker_test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm env:check
+      - run: pnpm backend prisma:generate
+      - run: pnpm backend test:int
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: quacker
+          POSTGRES_PASSWORD: quacker
+          POSTGRES_DB: quacker
+        ports: ['5434:5432']
+        options: >-
+          --health-cmd "pg_isready -U quacker" --health-interval 3s
+          --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm env:check
+      - run: pnpm backend migrate && pnpm backend seed
+      - run: pnpm --filter frontend exec playwright install --with-deps chromium
+      - name: Start backend and frontend
+        run: |
+          pnpm backend start > backend.log 2>&1 &
+          pnpm frontend dev > frontend.log 2>&1 &
+          for url in http://localhost:4050/api/docs http://localhost:3050; do
+            timeout 180 bash -c "until curl -sf $url > /dev/null; do sleep 2; done"
+          done
+      - run: pnpm frontend test:e2e
+      - if: failure()
+        run: cat backend.log frontend.log
+
+  # Shows red when a PR rewrites or removes lines in existing tests.
+  # Not a required check: it flags the PR for review, it doesn't block the merge.
+  test-changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Only additions in test files
+        run: |
+          changed=$(git diff --numstat "origin/${{ github.base_ref }}...HEAD" \
+            | awk '$2 > 0 && ($3 ~ /\.(spec|int-spec)\.ts$|\.test\.tsx$|^apps\/frontend\/e2e\//) { print $3 }')
+          if [ -n "$changed" ]; then
+            echo "Existing tests were changed (lines removed or rewritten):"
+            echo "$changed"
+            echo "The PR description must say why."
+            exit 1
+          fi
+          echo "Test files only gained lines."
